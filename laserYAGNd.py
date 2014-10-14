@@ -6,22 +6,21 @@ Xiao-Bass speed equations for
 YAG:Nd laser
 @package laserYAGNd
 '''
+__author__ = 'oriundi'
 
 
-import math
 import sys
-import timeit
 import matplotlib.pyplot as plt
 from scipy.integrate import ode
-import numpy
 from config import *
 
 
 def equation(t, x):
 	# Xiao-Bass speed equations
-	return numpy.array([R - Cg * x[0] * x[2] - x[0]/tau_g,
+	eq = numpy.array([R - Cg * x[0] * x[2] - x[0]/tau_g,
 						Ca * x[1] * x[2] + (Na_total - x[1])/tau_a,
 						(x[0]*g - x[1]*a1 - (Na_total-x[1])*a2 - 2*gamma) * x[2]/tau_r + (x[0]+Ng_total)*Cg_eps])
+	return eq
 
 r = ode(equation).set_integrator('dopri5', atol=10**-12, rtol=10**-12)
 r.set_initial_value(x0, t0)
@@ -42,7 +41,7 @@ def laserYAGNd(x_out, tau):
 
 
 def main():
-	Nd, Na, q, P, tau = laserYAGNd(x_out, tau1)
+	Nd, Na, q, P, tau = laserYAGNd(x_out_initial, tau_initial)
 
 	plt.figure(1)
 	plt.subplot(311)

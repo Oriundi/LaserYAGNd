@@ -65,7 +65,7 @@ t0 = 0.
 t1 = 50.
 dt = 0.01
 x0 = numpy.array([1.66*10**5, 10**5, 0])
-x_out = x0
-tau1 = t0
+x_out_initial = x0
+tau_initial = t0
 
 
