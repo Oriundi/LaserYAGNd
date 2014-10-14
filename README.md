@@ -9,5 +9,3 @@ Reference
 The Passively Q-switched Microchip Nd:YAG Laser
 Optimization for Rangefinder Applications,
 O. Buryy et al.  ACTA PHYSICA POLONICA A, Vol. 117 (2010)
-
-
