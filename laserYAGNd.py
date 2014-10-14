@@ -19,7 +19,7 @@ def equation(t, x):
                         (x[0]*g - x[1]*a1 - (Na_total-x[1])*a2 - 2*gamma)
                         * x[2]/tau_r + (x[0]+Ng_total)*Cg_eps])
 
-r = ode(equation).set_integrator('dopri5', atol=10**-12, rtol=10**-12)
+r = ode(equation).set_integrator('dopri5', atol=1e-12, rtol=1e-12)
 r.set_initial_value(x0, t0)
 
 
@@ -31,12 +31,12 @@ def laserYAGNd(x_out, tau):
     nd = x_out[:, 0]
     na = x_out[:, 1]
     q = x_out[:, 2]
-    p = h*nu_p/tau_r * math.log(1/R2) * q * 10**6
+    p = h*nu_p/tau_r * math.log(1/R2) * q * 1e6
     return nd, na, q, p, tau
 
 
 def main():
-    Nd, Na, q, P, tau = laserYAGNd(x_out, tau1)
+    Nd, Na, q, P, tau = laserYAGNd(x_out_initial, tau_initial)
     plt.figure(1)
     plt.subplot(311)
     plt.plot(tau, Nd)
