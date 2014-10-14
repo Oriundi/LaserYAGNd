@@ -35,7 +35,7 @@ def laserYAGNd(x_out, tau):
 	nd = x_out[:, 0]
 	na = x_out[:, 1]
 	q = x_out[:, 2]
-	p = h*nu_p/tau_r * math.log(1/R2) * q * 10**6
+	p = h*nu_p/tau_r * math.log(1/R2) * q * 1e6
 
 	return nd, na, q, p, tau
 
