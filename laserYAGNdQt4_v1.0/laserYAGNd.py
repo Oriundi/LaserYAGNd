@@ -88,10 +88,10 @@ class MainApp(QtGui.QMainWindow):
 		self.ui.value_tau_g.setProperty("value", cfgfile.get('Times', 'tau_g'))
 		self.ui.value_tau_a.setProperty("value", cfgfile.get('Times', 'tau_a'))
 
-		self.ui.value_lg.setProperty("value", cfgfile.get('Dimensions', 'lg'))
-		self.ui.value_la.setProperty("value", cfgfile.get('Dimensions', 'la'))
-		self.ui.value_rl.setProperty("value", cfgfile.get('Dimensions', 'rl'))
-		self.ui.value_n.setProperty("value", cfgfile.get('Dimensions', 'n'))
+		self.ui.value_lg.setProperty("value", cfgfile.get('Resonator', 'lg'))
+		self.ui.value_la.setProperty("value", cfgfile.get('Resonator', 'la'))
+		self.ui.value_rl.setProperty("value", cfgfile.get('Resonator', 'rl'))
+		self.ui.value_n.setProperty("value", cfgfile.get('Resonator', 'n'))
 
 		self.ui.value_sigma_g.setProperty("value", cfgfile.get('Cross-sections', 'sigma_g'))
 		self.ui.value_sigma_a1.setProperty("value", cfgfile.get('Cross-sections', 'sigma_a1'))
@@ -123,10 +123,10 @@ class MainApp(QtGui.QMainWindow):
 		self.ui.value_tau_g.setProperty("value", cfgfile.get('Times', 'tau_g'))
 		self.ui.value_tau_a.setProperty("value", cfgfile.get('Times', 'tau_a'))
 
-		self.ui.value_lg.setProperty("value", cfgfile.get('Dimensions', 'lg'))
-		self.ui.value_la.setProperty("value", cfgfile.get('Dimensions', 'la'))
-		self.ui.value_rl.setProperty("value", cfgfile.get('Dimensions', 'rl'))
-		self.ui.value_n.setProperty("value", cfgfile.get('Dimensions', 'n'))
+		self.ui.value_lg.setProperty("value", cfgfile.get('Resonator', 'lg'))
+		self.ui.value_la.setProperty("value", cfgfile.get('Resonator', 'la'))
+		self.ui.value_rl.setProperty("value", cfgfile.get('Resonator', 'rl'))
+		self.ui.value_n.setProperty("value", cfgfile.get('Resonator', 'n'))
 
 		self.ui.value_sigma_g.setProperty("value", cfgfile.get('Cross-sections', 'sigma_g'))
 		self.ui.value_sigma_a1.setProperty("value", cfgfile.get('Cross-sections', 'sigma_a1'))
@@ -159,11 +159,11 @@ class MainApp(QtGui.QMainWindow):
 		cfgfile.set('Times', 'tau_g', self.ui.value_tau_g.text())
 		cfgfile.set('Times', 'tau_a', self.ui.value_tau_a.text())
 
-		cfgfile.add_section('Dimensions')
-		cfgfile.set('Dimensions', 'lg', self.ui.value_lg.text())
-		cfgfile.set('Dimensions', 'la', self.ui.value_la.text())
-		cfgfile.set('Dimensions', 'rl', self.ui.value_rl.text())
-		cfgfile.set('Dimensions', 'n', self.ui.value_n.text())
+		cfgfile.add_section('Resonator')
+		cfgfile.set('Resonator', 'lg', self.ui.value_lg.text())
+		cfgfile.set('Resonator', 'la', self.ui.value_la.text())
+		cfgfile.set('Resonator', 'rl', self.ui.value_rl.text())
+		cfgfile.set('Resonator', 'n', self.ui.value_n.text())
 
 		cfgfile.add_section('Cross-sections')
 		cfgfile.set('Cross-sections', 'sigma_g', self.ui.value_sigma_g.text())
@@ -190,8 +190,8 @@ class MainApp(QtGui.QMainWindow):
 	def equation(self, t, x):
 		tau_g = self.ui.value_tau_g.valueFromText(self.ui.value_tau_g.text())
 		tau_a = self.ui.value_tau_a.valueFromText(self.ui.value_tau_a.text())
-		Ng_total = self.ui.value_Ng_total.valueFromText(self.ui.value_Ng_total.text())
-		Na_total = self.ui.value_Na_total.valueFromText(self.ui.value_Na_total.text())
+		Ng_total = self.ui.value_Ng_total.valueFromText(self.ui.value_Ng_total.text()) * 1e-12
+		Na_total = self.ui.value_Na_total.valueFromText(self.ui.value_Na_total.text()) * 1e-12
 		gamma, tau_r, R, Cg, Ca, g, a1, a2, Cg_eps, nu_p = self.update_input_data()
 
 		# Xiao-Bass speed equations
@@ -227,21 +227,21 @@ class MainApp(QtGui.QMainWindow):
 	def update_input_data(self):
 		c0 = 3 * 1e8  # um^2/us, speed of light
 		h = 6.626069 * 1e-34 * 1e6  # J*us, Plank constant
-		eps = 10**-13   # describes relative power of spontaneous emission, dimensionless
+		eps = 10**-13   # describes relative power of spontaneous emission, Resonatorless
 
 		lg = self.ui.value_lg.valueFromText(self.ui.value_lg.text())
 		la = self.ui.value_la.valueFromText(self.ui.value_la.text())
 		rl = self.ui.value_rl.valueFromText(self.ui.value_rl.text())
 		n = self.ui.value_n.valueFromText(self.ui.value_n.text())
 
-		sigma_g = self.ui.value_sigma_g.valueFromText(self.ui.value_sigma_g.text())
-		sigma_a1 = self.ui.value_sigma_a1.valueFromText(self.ui.value_sigma_a1.text())
-		sigma_a2 = self.ui.value_sigma_a2.valueFromText(self.ui.value_sigma_a2.text())
+		sigma_g = self.ui.value_sigma_g.valueFromText(self.ui.value_sigma_g.text()) * 1e8
+		sigma_a1 = self.ui.value_sigma_a1.valueFromText(self.ui.value_sigma_a1.text()) * 1e8
+		sigma_a2 = self.ui.value_sigma_a2.valueFromText(self.ui.value_sigma_a2.text()) * 1e8
 
 		Ng_total_perc = self.ui.value_Ng_total_perc.valueFromText(self.ui.value_Ng_total_perc.text())
 
 
-		alpha_p = self.ui.value_alpha_p.valueFromText(self.ui.value_alpha_p.text())
+		alpha_p = self.ui.value_alpha_p.valueFromText(self.ui.value_alpha_p.text()) * 1e-4
 		R1 = self.ui.value_R1.valueFromText(self.ui.value_R1.text())
 		R2 = self.ui.value_R2.valueFromText(self.ui.value_R2.text())
 
@@ -298,8 +298,8 @@ class MainApp(QtGui.QMainWindow):
 		gamma, tau_r, R, Cg, Ca, g, a1, a2, Cg_eps, nu_p = self.update_input_data()
 		R2 = self.ui.value_R2.valueFromText(self.ui.value_R2.text())
 
-		Ng_total = self.ui.value_Ng_total.valueFromText(self.ui.value_Ng_total.text())
-		Na_total = self.ui.value_Na_total.valueFromText(self.ui.value_Na_total.text())
+		Ng_total = self.ui.value_Ng_total.valueFromText(self.ui.value_Ng_total.text()) * 1e-12
+		Na_total = self.ui.value_Na_total.valueFromText(self.ui.value_Na_total.text()) * 1e-12
 		x_out_initial = numpy.array([Ng_total, Na_total, 0])
 		tau_initial = 0
 
