@@ -240,7 +240,6 @@ class MainApp(QtGui.QMainWindow):
 
 		Ng_total_perc = self.ui.value_Ng_total_perc.valueFromText(self.ui.value_Ng_total_perc.text())
 
-
 		alpha_p = self.ui.value_alpha_p.valueFromText(self.ui.value_alpha_p.text()) * 1e-4
 		R1 = self.ui.value_R1.valueFromText(self.ui.value_R1.text())
 		R2 = self.ui.value_R2.valueFromText(self.ui.value_R2.text())
