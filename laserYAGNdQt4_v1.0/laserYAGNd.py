@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 '''
 Documentation, License etc.
@@ -8,7 +8,7 @@ YAG:Nd laser
 '''
 
 import sys
-from os.path import expanduser
+import os
 import math
 import configparser
 from scipy.integrate import ode
@@ -19,6 +19,8 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
 
+version_file = open(os.path.join(os.path.curdir, 'VERSION'))
+version = version_file.read().strip()
 
 class fig_etmpty(FigureCanvas):
 	def __init__(self):
@@ -71,6 +73,7 @@ class MainApp(QtGui.QMainWindow):
 		QtGui.QMainWindow.__init__(self, parent)
 		self.ui = Ui_MainWindow()
 		self.ui.setupUi(self)
+		self.ui.input_parameter.setCurrentIndex(0)
 
 		self.initialize_figures()
 		self.open_default_config()
@@ -112,7 +115,7 @@ class MainApp(QtGui.QMainWindow):
 	def open_config(self):
 		FileDialog = QtGui.QFileDialog()
 		file_filter = 'Config Files (*.cfg)'
-		default_dir = expanduser("~")
+		default_dir = os.path.expanduser("~")
 		filename = QtGui.QFileDialog.getOpenFileName(FileDialog, "Open Configuration File", default_dir, file_filter)
 
 		cfgfile = configparser.ConfigParser()
@@ -147,7 +150,7 @@ class MainApp(QtGui.QMainWindow):
 	def save_config(self):
 		FileDialog = QtGui.QFileDialog()
 		file_filter = 'Config Files (*.cfg)'
-		default_dir = expanduser("~")
+		default_dir = os.path.expanduser("~")
 		filename = QtGui.QFileDialog.getSaveFileName(FileDialog, "Save Configuration File", default_dir, file_filter)
 
 		cfgfile = configparser.ConfigParser()
@@ -329,6 +332,7 @@ def main():
 	window.setWindowTitle("Laser YAG:Nd")
 	window.show()
 	sys.exit(app.exec_())
+
 
 if __name__ == '__main__':
 	main()
