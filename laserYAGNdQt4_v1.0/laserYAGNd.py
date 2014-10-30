@@ -17,7 +17,7 @@ import numpy
 from PyQt4 import QtCore, QtGui
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
+from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
 
 version_file = open(os.path.join(os.path.curdir, 'VERSION'))
 version = version_file.read().strip()
@@ -135,9 +135,9 @@ class MainApp(QtGui.QMainWindow):
 		self.ui.value_sigma_a1.setProperty("value", cfgfile.get('Cross-sections', 'sigma_a1'))
 		self.ui.value_sigma_a2.setProperty("value", cfgfile.get('Cross-sections', 'sigma_a2'))
 
-		self.ui.value_Ng_total.setProperty("value", cfgfile.get('Concentration', 'Ng_total'))
-		self.ui.value_Ng_total_perc.setProperty("value", cfgfile.get('Concentration', 'Ng_total_perc'))
-		self.ui.value_Na_total.setProperty("value", cfgfile.get('Concentration', 'Na_total'))
+		self.ui.value_Ng_total.setProperty("value", cfgfile.get('Concentrations', 'Ng_total'))
+		self.ui.value_Ng_total_perc.setProperty("value", cfgfile.get('Concentrations', 'Ng_total_perc'))
+		self.ui.value_Na_total.setProperty("value", cfgfile.get('Concentrations', 'Na_total'))
 
 		self.ui.value_alpha_p.setProperty("value", cfgfile.get('Losses', 'alpha_p'))
 		self.ui.value_R1.setProperty("value", cfgfile.get('Losses', 'R1'))
@@ -241,7 +241,7 @@ class MainApp(QtGui.QMainWindow):
 		sigma_a1 = self.ui.value_sigma_a1.valueFromText(self.ui.value_sigma_a1.text()) * 1e8
 		sigma_a2 = self.ui.value_sigma_a2.valueFromText(self.ui.value_sigma_a2.text()) * 1e8
 
-		Ng_total_perc = self.ui.value_Ng_total_perc.valueFromText(self.ui.value_Ng_total_perc.text())
+		# Ng_total_perc = self.ui.value_Ng_total_perc.valueFromText(self.ui.value_Ng_total_perc.text())
 
 		alpha_p = self.ui.value_alpha_p.valueFromText(self.ui.value_alpha_p.text()) * 1e-4
 		R1 = self.ui.value_R1.valueFromText(self.ui.value_R1.text())
@@ -328,6 +328,7 @@ class MainApp(QtGui.QMainWindow):
 
 def main():
 	app = QtGui.QApplication(sys.argv)
+	#app.setStyle('Oxigen')
 	window = MainApp()
 	window.setWindowTitle("Laser YAG:Nd")
 	window.show()
