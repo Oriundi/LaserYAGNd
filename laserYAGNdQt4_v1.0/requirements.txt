@@ -1,4 +1,4 @@
 scipy
 numpy
 PyQt4
-matplotlib
+pyqtgraph
