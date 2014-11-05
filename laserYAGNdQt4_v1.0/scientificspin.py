@@ -19,10 +19,10 @@ def valid_float_string(string):
 
     #def validate(self, string, position):
     #    if valid_float_string(string):
-    #        return self.State.Acceptable
+    #        return self.Acceptable
     #    if string == "" or string[position-1] in 'e.-+':
-    #        return self.State.Intermediate
-    #    return self.State.Invalid
+    #        return self.Intermediate
+    #    return self.Invalid
 
     #def fixup(self, text):
     #    match = _float_re.search(text)
@@ -33,10 +33,10 @@ class ScientificDoubleSpinBox(QDoubleSpinBox):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.setMinimum(-numpy.inf)
-        self.setMaximum(numpy.inf)
-        #self.validator = FloatValidator()
-        #self.setDecimals(1000)
+    #    self.setMinimum(-numpy.inf)
+    #    self.setMaximum(numpy.inf)
+    #    self.validator = FloatValidator()
+    #    self.setDecimals(1000)
 
     #def validate(self, text, position):
     #    return self.validator.validate(text, position)
@@ -44,8 +44,8 @@ class ScientificDoubleSpinBox(QDoubleSpinBox):
     #def fixup(self, text):
     #    return self.validator.fixup(text)
 
-    def valueFromText(self, text):
-        return float(text)
+    #def valueFromText(self, text):
+    #    return float(text)
 
     def textFromValue(self, value):
         return format_float(value)
