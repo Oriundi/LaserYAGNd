@@ -1,5 +1,3 @@
-__author__ = 'oriundi'
-
 import math
 import numpy
 
@@ -11,8 +9,8 @@ sigma_g = 3.5 * 1e-11  # um^2 efficient cross-section of laser transition
 c0 = 3 * 1e8  # um^2/us, speed of light
 w0 = 300    # um, mode radius
 rl = 100    # um, laser beam radius
-Pi = 0.2  # W, incident power
-alpha_p = 5*1e-7  # 1/um, absorption coefficient on the wavelength
+Pi = 2  # W, incident power
+alpha_p = 5 * 1e-7  # 1/um, absorption coefficient on the wavelength
 h = 6.626069 * 1e-34 * 1e6  # J*us, Plank constant
 wavelength = 0.808  # um, radiation excitation wavelength
 n = 1.8169  # YAG:Nd refractive index at 1.064 um
@@ -20,20 +18,24 @@ nu_p = c0 / wavelength  # 1/us, radiation excitation frequency
 
 # Parameters for the second equation
 sigma_a1 = 2.4 * 1e-10    # um^2, cross-section transition between Cr(4+)(d) levels in absorber
-Na_total = 1*1e5  # um^-3, Cr(4+) ion concentration in tetraidal state
+# Na_total = 1*1e5  # um^-3, Cr(4+) ion concentration in tetraidal state
+
+T0 = 0.9987   # Initial absorber transmission ( 0 ... 1)
+Ng_total_perc = 0.0012   # Initial Activator concentration
 
 # Parameters for the third equation
-lg = 1000   # um, thickness of active medium
+lg = 1000  # um, thickness of active medium
 la = 50  # um, absorber thickness (10-250 um)
 sigma_a2 = 2.8 * 1e-11    # um^2, cross-section transition between Cr(4+)(d) levels in absorber
 gamma_i = alpha_p * lg  # absorption losses in active media
 R1 = 1  # reflectivity of input mirror
 gamma_1 = -math.log(R1)  # losses on input mirror
-R2 = 0.95   # reflectivity of output mirror
+R2 = 0.96   # reflectivity of output mirror
+
 gamma_2 = -math.log(R2)  # losses on output mirror
 gamma = gamma_i + 0.5 * (gamma_1 + gamma_2)  # losses
 eps = 10**-13   # describes relative power of spontaneous emission, dimensionless
-Ng_total = 1.66*1e5   # um^-3, Activator concentration (1.2 at %)
+# Ng_total = 1.66*1e5   # um^-3, Activator concentration (1.2 at %)
 lr = n * (lg + la)  # um, resonator optical length, lr = n(l_g + l_a)
 tau_r = 2 * lr / c0  # us, time of photon full pass in resonator (2l'/c0), t_r = 2*l_opt/c
 
@@ -61,9 +63,14 @@ a2 = 2 * sigma_a2 * la  # um^3
 Cg_eps = eps * c0 * sigma_g * lg / lr  # um^3/us.
 
 # Initial values
-t0 = 0.
-t1 = 50.
+t0 = 0
+t1 = 400
 dt = 0.01
-x0 = numpy.array([1.66*1e5, 1e5, 0])
+
+Ng_total = (3 * 4.55) / ((3 * 88.9 + 5 * 27.0 + 12 * 16.0) * 1.6726 * 1e-24) * Ng_total_perc / 100 * 1e-12
+Na_total = math.log(T0) / (-1 * sigma_a1 * la)
+
+x0 = numpy.array([Ng_total, Na_total, 0])
 x_out_initial = x0
 tau_initial = t0
+

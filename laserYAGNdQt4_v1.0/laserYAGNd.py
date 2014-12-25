@@ -11,16 +11,19 @@ import sys
 import os
 import math
 import configparser
-import time
-from scipy import seterr
-from scipy import integrate
-from laserYAGNd_ui import *
+
+#from scipy import seterr
+from scipy import integrate, optimize
+#from scipy.signal import argrelmax
+from laserYAGNd_ui_800x600 import *
 import numpy
 from PyQt4 import QtCore, QtGui
 import pyqtgraph as pqg
-#import sip
+#import sympy
+#from multiprocessing import Pool
+import sqlalchemy
 
-#sip.setapi('QString', 1)
+
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
 except AttributeError:
@@ -60,13 +63,16 @@ class MainApp(QtGui.QMainWindow):
         font.setWeight(50)
         self.ui.plot_NdNa.setBackground('w')
         self.ui.plot_P.setBackground('w')
-        self.ui.plot_NdNa.setTitle(_fromUtf8('Concentrations'), font=font)
+        self.ui.plot_NdNa.setTitle(_fromUtf8('Crystal properties'), font=font)
         self.ui.plot_P.setTitle(_fromUtf8('Power'), font='k')
         self.ui.plot_NdNa.setLabel('left', text=_fromUtf8('Concentration, cm<sup>-3</sup>,<br>'
                                                           'red - N<sub>g</sub>, green - N<sub>a</sub>'), font='k')
         self.ui.plot_NdNa.setLabel('bottom',  text=_fromUtf8('Time, μs'), font='k')
         self.ui.plot_P.setLabel('left', text=_fromUtf8('Power, W'), font='k')
         self.ui.plot_P.setLabel('bottom', text=_fromUtf8('Time, μs'), font='k')
+
+        # Working with PostgreSQL
+        # engine = sqlalchemy.create_engine('postgresql://oriundi:q3w7e9r@localhost/test')
 
     def open_default_config(self):
         cfgfile = configparser.ConfigParser()
@@ -86,11 +92,11 @@ class MainApp(QtGui.QMainWindow):
         self.ui.value_sigma_a1.setProperty("value", float(cfgfile.get('Cross-sections', 'sigma_a1')) / 1e-18)
         self.ui.value_sigma_a2.setProperty("value", float(cfgfile.get('Cross-sections', 'sigma_a2')) / 1e-19)
 
-        self.ui.value_Ng_total.setProperty("value", float(cfgfile.get('Concentrations', 'Ng_total')) / 1e17)
-        self.ui.value_Ng_total_perc.setProperty("value", cfgfile.get('Concentrations', 'Ng_total_perc'))
-        self.ui.value_Na_total.setProperty("text", float(cfgfile.get('Concentrations', 'Na_total')) / 1e17)
+        #self.ui.value_Ng_total.setProperty("value", float(cfgfile.get('Crystal properties', 'Ng_total')) / 1e17)
+        self.ui.value_Ng_total_perc.setProperty("value", cfgfile.get('Crystal properties', 'Ng_total_perc'))
+        self.ui.value_T0.setProperty("text", float(cfgfile.get('Crystal properties', 'T0')))
 
-        self.ui.value_alpha_p.setProperty("value", float(cfgfile.get('Losses', 'alpha_p')) / 1e-3)
+        self.ui.value_alpha.setProperty("value", float(cfgfile.get('Losses', 'alpha')) / 1e-3)
         self.ui.value_R1.setProperty("value", cfgfile.get('Losses', 'R1'))
         self.ui.value_R2.setProperty("value", cfgfile.get('Losses', 'R2'))
 
@@ -121,11 +127,10 @@ class MainApp(QtGui.QMainWindow):
         self.ui.value_sigma_a1.setProperty("value", float(cfgfile.get('Cross-sections', 'sigma_a1')) / 1e-18)
         self.ui.value_sigma_a2.setProperty("value", float(cfgfile.get('Cross-sections', 'sigma_a2')) / 1e-19)
 
-        self.ui.value_Ng_total.setProperty("value", float(cfgfile.get('Concentrations', 'Ng_total')) / 1e17)
-        self.ui.value_Ng_total_perc.setProperty("value", cfgfile.get('Concentrations', 'Ng_total_perc'))
-        self.ui.value_Na_total.setProperty("text", float(cfgfile.get('Concentrations', 'Na_total')) / 1e17)
+        self.ui.value_Ng_total_perc.setProperty("value", cfgfile.get('Crystal properties', 'Ng_total_perc'))
+        self.ui.value_T0.setProperty("text", float(cfgfile.get('Crystal properties', 'Na_total')))
 
-        self.ui.value_alpha_p.setProperty("value", float(cfgfile.get('Losses', 'alpha_p')) / 1e-3)
+        self.ui.value_alpha.setProperty("value", float(cfgfile.get('Losses', 'alpha')) / 1e-3)
         self.ui.value_R1.setProperty("value", cfgfile.get('Losses', 'R1'))
         self.ui.value_R2.setProperty("value", cfgfile.get('Losses', 'R2'))
 
@@ -155,17 +160,16 @@ class MainApp(QtGui.QMainWindow):
         cfgfile.set('Resonator', 'n', self.ui.value_n.text())
 
         cfgfile.add_section('Cross-sections')
-        cfgfile.set('Cross-sections', 'sigma_g', float(self.ui.value_sigma_g.text()) * 1e-19)
-        cfgfile.set('Cross-sections', 'sigma_a1', float(self.ui.value_sigma_a1.text()) * 1e-18)
-        cfgfile.set('Cross-sections', 'sigma_a2', float(self.ui.value_sigma_a2.text()) * 1e-19)
+        cfgfile.set('Cross-sections', 'sigma_g', str(float(self.ui.value_sigma_g.text()) * 1e-19))
+        cfgfile.set('Cross-sections', 'sigma_a1', str(float(self.ui.value_sigma_a1.text()) * 1e-18))
+        cfgfile.set('Cross-sections', 'sigma_a2', str(float(self.ui.value_sigma_a2.text()) * 1e-19))
 
-        cfgfile.add_section('Concentrations')
-        cfgfile.set('Concentrations', 'Ng_total', float(self.ui.value_Ng_total.text()) * 1e17)
-        cfgfile.set('Concentrations', 'Ng_total_perc', self.ui.value_Ng_total_perc.text())
-        cfgfile.set('Concentrations', 'Na_total', float(self.ui.value_Na_total.text()) * 1e17)
+        cfgfile.add_section('Crystal properties')
+        cfgfile.set('Crystal properties', 'Ng_total_perc', self.ui.value_Ng_total_perc.text())
+        cfgfile.set('Crystal properties', 'Na_total', str(float(self.ui.value_T0.text())))
 
         cfgfile.add_section('Losses')
-        cfgfile.set('Losses', 'alpha_p', float(self.ui.value_alpha_p.text()) * 1e-3)
+        cfgfile.set('Losses', 'alpha', str(float(self.ui.value_alpha.text()) * 1e-3))
         cfgfile.set('Losses', 'R1', self.ui.value_R1.text())
         cfgfile.set('Losses', 'R2', self.ui.value_R2.text())
 
@@ -179,20 +183,25 @@ class MainApp(QtGui.QMainWindow):
     def equation(self, t, x):
         tau_g = self.ui.value_tau_g.valueFromText(self.ui.value_tau_g.text())
         tau_a = self.ui.value_tau_a.valueFromText(self.ui.value_tau_a.text())
-        Ng_total = self.ui.value_Ng_total.valueFromText(self.ui.value_Ng_total.text()) * 1e-12 * 1e17
-        Na_total = self.ui.value_Na_total.valueFromText(self.ui.value_Na_total.text()) * 1e-12 * 1e17
-        gamma, tau_r, R, Cg, Ca, g, a1, a2, Cg_eps, nu_p = self.update_input_data()
+        T0 = self.ui.value_T0.valueFromText(self.ui.value_T0.text())
+        Ng_total_perc = self.ui.value_Ng_total_perc.valueFromText(self.ui.value_Ng_total_perc.text())
+        gamma, tau_r, R, Ng_total, Na_total, Cg, Ca, g, a1, a2, Cg_eps, nu_p = self.update_input_data()
+        eq = []
+
+        #Ng_total = 1.66e7
+        #Na_total = 1e6
 
         # Xiao-Bass speed equations
+        # eq[0] = R - Cg * x[0] * x[2] - x[0]/tau_g
+        # eq[1] = Ca * x[1] * x[2] + (Na_total - x[1])/tau_a
+        # eq[2] = (x[0]*g - x[1]*a1 - (Na_total-x[1])*a2 - 2*gamma) * x[2]/tau_r + (x[0]+Ng_total) * Cg_eps
         eq = numpy.array([R - Cg * x[0] * x[2] - x[0]/tau_g,
-                          Ca * x[1] * x[2] + (Na_total - x[1])/tau_a,
-                          (x[0]*g - x[1]*a1 - (Na_total-x[1])*a2 - 2*gamma)
-                          * x[2]/tau_r + (x[0]+Ng_total)*Cg_eps])
+                           Ca * x[1] * x[2] + (T0 - x[1])/tau_a,
+                           (x[0]*g - x[1]*a1 - (T0-x[1])*a2 - 2*gamma)
+                          * x[2]/tau_r + (x[0]+Ng_total_perc)*Cg_eps])
         return eq
 
     def solve_equation(self, x_out, tau):
-        seterr(all='warn')
-
         tau_m = self.ui.value_tau_m.valueFromText(self.ui.value_tau_m.text())
         dt = self.ui.value_dt.valueFromText(self.ui.value_dt.text())
 
@@ -200,7 +209,10 @@ class MainApp(QtGui.QMainWindow):
         progress.setWindowModality(QtCore.Qt.WindowModal)
         progress.setMinimumDuration(0)
 
-        r = integrate.ode(self.equation).set_integrator('dopri5', atol=1e-12, rtol=1e-12)
+        # ts = numpy.linspace(tau, dt, tau_m)
+        # r = integrate.odeint(self.equation, x_out, ts)
+
+        r = integrate.ode(self.equation).set_integrator('dop853', atol=1e-12, rtol=1e-12)
         r.set_initial_value(x_out, tau)
         while r.successful() and r.t < tau_m:
             r.integrate(r.t+dt)
@@ -211,46 +223,47 @@ class MainApp(QtGui.QMainWindow):
                 break
         progress.setValue(tau_m)
         if not r.successful():
-            error_msg_ode = QtGui.QMessageBox()
-            error_msg_ode.setWindowModality(QtCore.Qt.WindowModal)
+            error_msg = QtGui.QMessageBox()
+            error_msg.setWindowModality(QtCore.Qt.WindowModal)
             font = QtGui.QFont()
             font.setPointSize(14)
             font.setBold(True)
             font.setFamily("Liberation Sans")
-            error_msg_ode.setText('Time step is too big')
-            error_msg_ode.setFont(font)
-            error_msg_ode.setFocus()
-            error_msg_ode.exec_()
+            error_msg.setText('Please make time step smaller')
+            error_msg.setFont(font)
+            error_msg.setFocus()
+            error_msg.exec_()
         nd = x_out[:, 0]
         na = x_out[:, 1]
         q = x_out[:, 2]
         return nd, na, q, tau
 
     def update_input_data(self):
-        c0 = 3 * 1e8  # um^2/us, speed of light
+        c0 = 3e4   #c0 = 3 * 1e8  # um^2/us, speed of light
         h = 6.626069 * 1e-34 * 1e6  # J*us, Plank constant
         eps = 10**-13   # describes relative power of spontaneous emission, Resonatorless
 
-        lg = self.ui.value_lg.valueFromText(self.ui.value_lg.text())
-        la = self.ui.value_la.valueFromText(self.ui.value_la.text())
-        rl = self.ui.value_rl.valueFromText(self.ui.value_rl.text())
+        lg = self.ui.value_lg.valueFromText(self.ui.value_lg.text()) * 1e-6
+        la = self.ui.value_la.valueFromText(self.ui.value_la.text()) * 1e-6
+        rl = self.ui.value_rl.valueFromText(self.ui.value_rl.text()) * 1e-6
         n = self.ui.value_n.valueFromText(self.ui.value_n.text())
 
-        sigma_g = self.ui.value_sigma_g.valueFromText(self.ui.value_sigma_g.text()) * 1e8 * 1e-19
-        sigma_a1 = self.ui.value_sigma_a1.valueFromText(self.ui.value_sigma_a1.text()) * 1e8 * 1e-18
-        sigma_a2 = self.ui.value_sigma_a2.valueFromText(self.ui.value_sigma_a2.text()) * 1e8 * 1e-19
+        sigma_g = self.ui.value_sigma_g.valueFromText(self.ui.value_sigma_g.text()) * 1e-19  # * 1e8
+        sigma_a1 = self.ui.value_sigma_a1.valueFromText(self.ui.value_sigma_a1.text()) * 1e-18   # 1e8
+        sigma_a2 = self.ui.value_sigma_a2.valueFromText(self.ui.value_sigma_a2.text()) * 1e-19  # 1e8
 
-#        Ng_total_perc = self.ui.value_Ng_total_perc.valueFromText(self.ui.value_Ng_total_perc.text())
+        Ng_total_perc = self.ui.value_Ng_total_perc.valueFromText(self.ui.value_Ng_total_perc.text())
+        T0 = self.ui.value_T0.valueFromText(self.ui.value_T0.text())
 
-        alpha_p = self.ui.value_alpha_p.valueFromText(self.ui.value_alpha_p.text()) * 1e-4 * 1e-3
+        alpha = self.ui.value_alpha.valueFromText(self.ui.value_alpha.text()) * 1e-3   # 1e-4
         R1 = self.ui.value_R1.valueFromText(self.ui.value_R1.text())
         R2 = self.ui.value_R2.valueFromText(self.ui.value_R2.text())
 
         Pi = self.ui.value_Pi.valueFromText(self.ui.value_Pi.text())
-        wavelength = self.ui.value_wavelength.valueFromText(self.ui.value_wavelength.text())
-        rp = self.ui.value_rp.valueFromText(self.ui.value_rp.text())
+        wavelength = self.ui.value_wavelength.valueFromText(self.ui.value_wavelength.text()) * 1e-6
+        rp = self.ui.value_rp.valueFromText(self.ui.value_rp.text()) * 1e-6
 
-        gamma_i = alpha_p * lg  # absorption losses in active media
+        gamma_i = alpha * lg  # absorption losses in active media
         gamma_1 = -math.log(R1)  # losses on input mirror
         gamma_2 = -math.log(R2)  # losses on output mirror
         gamma = gamma_i + 0.5 * (gamma_1 + gamma_2)  # losses
@@ -260,10 +273,21 @@ class MainApp(QtGui.QMainWindow):
 
         V = math.pi * rp**2 * lg  	# um^3, pumping beam volume in generating media
         Vg = 0.5 * math.pi * rl**2 * lg
-        Veff = lr / la * Vg         # um^3, effective mode volume
+        Veff = lr / la * Vg          # um^3, effective mode volume
+        #print(V, Vg)
 
         eta = rl/rp
         R = eta * Pi / (V * h * nu_p * 1e6)
+
+        Ng_total = 0
+        Na_total = 0
+
+        Ng_total = (3 * 4.55) / ((3 * 88.9 + 5 * 27.0 + 12 * 16.0) * 1.6726 * 1e-24) * Ng_total_perc / 100
+        Na_total = math.log(T0) / (-1 * sigma_a1 * la)
+        # print("Ng_total out = %f" % Ng_total)
+        # print("Na_total out = %f" % Na_total)
+        # Ng_total = 1.66e18
+        # Na_total = 1e18
 
         # Coefs
         Cg = sigma_g * c0 / Veff   # 1/us
@@ -272,8 +296,9 @@ class MainApp(QtGui.QMainWindow):
         a1 = 2 * sigma_a1 * la  # um^3
         a2 = 2 * sigma_a2 * la  # um^3
         Cg_eps = eps * c0 * sigma_g * lg / lr  # um^3/us.
+        #print(Cg, Ca, g, a1, a2, Cg_eps)
 
-        return gamma, tau_r, R, Cg, Ca, g, a1, a2, Cg_eps, nu_p
+        return gamma, tau_r, R, Ng_total, Na_total, Cg, Ca, g, a1, a2, Cg_eps, nu_p
 
     def show_energy(self):
         imp_energy = QtGui.QMessageBox()
@@ -297,6 +322,7 @@ class MainApp(QtGui.QMainWindow):
     def app_run(self):
         self.ui.plot_NdNa.clear()
         self.ui.plot_P.clear()
+        error_msg = None
         global imp, energy
 
         font_error = QtGui.QFont()
@@ -305,73 +331,126 @@ class MainApp(QtGui.QMainWindow):
         font_error.setFamily("Liberation Sans")
 
         h = 6.626069 * 1e-34 * 1e6  # J*us, Plank constant
-        gamma, tau_r, R, Cg, Ca, g, a1, a2, Cg_eps, nu_p = self.update_input_data()
-        R2 = self.ui.value_R2.valueFromText(self.ui.value_R2.text())
+        gamma, tau_r, R, Ng_total, Na_total, Cg, Ca, g, a1, a2, Cg_eps, nu_p = self.update_input_data()
+        #print(Ng_total, Na_total)
 
-        Ng_total = self.ui.value_Ng_total.valueFromText(self.ui.value_Ng_total.text()) * 1e-12 * 1e17
-        Na_total = self.ui.value_Na_total.valueFromText(self.ui.value_Na_total.text()) * 1e-12 * 1e17
+        tau_g = self.ui.value_tau_g.valueFromText(self.ui.value_tau_g.text())
+        dt = self.ui.value_dt.valueFromText(self.ui.value_dt.text())
+        sigma_g = self.ui.value_sigma_g.valueFromText(self.ui.value_sigma_g.text()) * 1e-19   # * 1e8
+        sigma_a1 = self.ui.value_sigma_a1.valueFromText(self.ui.value_sigma_a1.text()) * 1e-18   # * 1e8
+        sigma_a2 = self.ui.value_sigma_a2.valueFromText(self.ui.value_sigma_a2.text()) * 1e-19   # * 1e8
+        lg = self.ui.value_lg.valueFromText(self.ui.value_lg.text())
+        la = self.ui.value_la.valueFromText(self.ui.value_la.text())
+        alpha = self.ui.value_alpha.valueFromText(self.ui.value_alpha.text()) * 1e-3   # 1e-4
+        R1 = self.ui.value_R1.valueFromText(self.ui.value_R1.text())
+        R2 = self.ui.value_R2.valueFromText(self.ui.value_R2.text())
+        n = self.ui.value_n.valueFromText(self.ui.value_n.text())
+        Ng_total_perc = self.ui.value_Ng_total_perc.valueFromText(self.ui.value_Ng_total_perc.text())
+        T0 = self.ui.value_T0.valueFromText(self.ui.value_T0.text())
+        lr = n * (lg + la)
+
+        #Ngi = 1 / (sigma_g * lg) * (sigma_a1 * la * Na_total + alpha * lr - 1 / 2 * math.log(R1 * R2))
+        #Ngi = 1.66e7
+        #Ngmax = R * tau_g
+        #Na_total = 1e6
+
+        print("Ng_total = %f" % Ng_total)
+        print("Na_total = %f" % Na_total)
+
         x_out_initial = numpy.array([Ng_total, Na_total, 0])
         tau_initial = 0
-        Nd, Na, q, tau = self.solve_equation(x_out_initial, tau_initial)
-        P = h * nu_p / tau_r * math.log(1/R2) * q * 1e6
-        # Calculate Impulse energy
-        max_P = numpy.array(numpy.where(P > max(P) / 2))
-        imp = 0
-        interval = []
-        inter = []
-        for ii in xrange(1, numpy.size(max_P)-1):
-            if P[max_P[0, ii]] > P[max_P[0, ii-1]] and P[max_P[0, ii]] > P[max_P[0, ii+1]]:
-                imp += 1
-
-        try:
-            one_imp_size = numpy.round(numpy.size(max_P)/imp)
-            inter = numpy.zeros([one_imp_size])
-        except ZeroDivisionError:
-            error_msg = QtGui.QMessageBox()
-            error_msg.setText('No impulses')
-            error_msg.setFont(font_error)
-            error_msg.show()
-        try:
-            num = 0
-            for ii in xrange(num, numpy.size(max_P)):
-                if max_P[0, ii] != max_P[0, numpy.size(max_P)-1]:
-                    if max_P[0, ii] == max_P[0, ii+1]-1:
-                        inter[ii-num] = max_P[0, ii]
-                    else:
-                        if inter[one_imp_size-1]:
-                            inter = numpy.append(inter, one_imp_size)
-                        inter[ii-num] = max_P[0, ii]
-                        interval.append(inter)
-                        num = ii + 1
-                        inter = numpy.zeros([one_imp_size])
-                else:
-                    inter[ii-num] = max_P[0, ii]
-                    interval.append(inter)
-
-            for ii in xrange(0, imp):
-                if interval[ii][one_imp_size - 1] == 0:
-                    interval[ii] = numpy.delete(interval[ii], one_imp_size-1)
-
-            dt = self.ui.value_dt.valueFromText(self.ui.value_dt.text())
-            energy = numpy.zeros(imp)
-
-            for ii in xrange(0, imp):
-                x = P[interval[ii][0]:interval[ii][numpy.size(interval[ii]) - 1] + 1]
-                energy[ii] = integrate.simps(x, dx=dt) * 1e-6
-
-        except IndexError:
-                error_msg = QtGui.QMessageBox()
-                error_msg.setText('No impulses')
-                error_msg.setFont(font_error)
-                error_msg.exec_()
+        Ng, Na, q, tau = self.solve_equation(x_out_initial, tau_initial)
+        P = numpy.array(h * nu_p / tau_r * math.log(1/R2) * q * 1e6)
 
         penNd = pqg.mkPen(width=1, color='r')
         penNa = pqg.mkPen(width=1, color='g')
         penP = pqg.mkPen(width=1, color='b')
-        self.ui.plot_P.plot(tau[:, 0], P, pen=penP)
-        self.ui.plot_NdNa.plot(tau[:, 0], Nd * 1e12, pen=penNd)
-        self.ui.plot_NdNa.plot(tau[:, 0], Na * 1e12, pen=penNa)
-        time.sleep(0.05)
+        self.ui.plot_P.plot(tau[:, 0],  P, pen=penP)
+        #self.ui.plot_NdNa.plot(tau[:, 0], Ng * 1e12, pen=penNd)
+        #self.ui.plot_NdNa.plot(tau[:, 0], Na * 1e12, pen=penNa)
+        self.ui.plot_NdNa.plot(tau[:, 0], Ng, pen=penNd)
+        self.ui.plot_NdNa.plot(tau[:, 0], Na, pen=penNa)
+'''
+        # Analisys
+        #T0 = math.exp(-sigma_a1 * la * Na_total)
+        #T = numpy.exp(-sigma_a1 * la * Na)
+        #self.ui.plot_P.plot(tau[:, 0], T * 100, pen=penNd)
+
+        #T00 = 0.9
+        #Na0 = - math.log(T00) / (sigma_a1 * la)
+        #Na0 = 1e8
+        #T000 = numpy.exp(-sigma_a1 * la * Na0)
+        #print(Na0)
+        #print(T000)
+
+        local_max = numpy.array(argrelmax(P))
+        for ii in xrange(numpy.size(local_max)):
+            index = local_max[0, ii]
+            if P[index] < 1e-3:
+                local_max[0, ii] = 0
+        mask = numpy.where(local_max == 0)
+        local_max = numpy.delete(local_max, mask[1])
+        imp = numpy.size(local_max)
+        imp_length = 0.1
+        cut = int(imp_length/dt)
+        max_P = []
+        energy_cut = math.exp(1) ** 2
+        for ii in xrange(imp):
+            value = local_max[ii]
+            index_max = numpy.zeros([2*cut])
+            P_local_max = P[value]
+            if value-cut < 0:
+                jj0 = 0
+            else:
+                jj0 = local_max[ii] - cut
+            if value+cut > numpy.size(P)-1:
+                jjn = numpy.size(P) - 1
+            else:
+                jjn = local_max[ii] + cut
+            for jj in xrange(jj0, jjn):
+                index_max[jj-jj0] = jj
+            index_max = numpy.delete(index_max, numpy.where(P[jj0:jjn] < P_local_max/energy_cut))
+            if numpy.size(index_max) != 0:
+                max_P.append(index_max)
+        for ii in xrange(imp):
+            index_max_zeros = numpy.array(numpy.where(max_P[ii] == 0))
+            max_P[ii] = numpy.delete(max_P[ii], index_max_zeros)
+        #print(max_P)
+
+        dt = self.ui.value_dt.valueFromText(self.ui.value_dt.text())
+        energy = numpy.zeros(imp)
+        try:
+            for ii in xrange(imp):
+                x = P[max_P[ii][0]:max_P[ii][numpy.size(max_P[ii]) - 1] + 1]
+                if numpy.size(x) < 3:
+                    if not error_msg:
+                        error_msg = QtGui.QMessageBox()
+                        error_msg.setText('Not enough point to draw impulse properly. Please make time step smaller.')
+                        error_msg.setFont(font_error)
+                        error_msg.exec_()
+                        break
+                energy[ii] = integrate.simps(x, dx=dt) * 1e-6
+            #print(energy)
+        except IndexError:
+            if max_P[:][0] != max_P[:][1]-1 or max_P[:][numpy.size(max_P)-2] != max_P[:][numpy.size(max_P)-1]-1:
+                if not error_msg:
+                    error_msg = QtGui.QMessageBox()
+                    error_msg.setText('Not enough point to draw impulse properly. Please make time step smaller.')
+                    error_msg.setFont(font_error)
+                    error_msg.exec_()
+            for ii in xrange(1, numpy.size(max_P)-2):
+                if not error_msg:
+                    if max_P[:][ii] != max_P[:][ii-1] + 1 and max_P[:][ii] != max_P[:][ii+1] - 1:
+                        error_msg = QtGui.QMessageBox()
+                        error_msg.setText('Not enough point to draw impulse properly. Please make time step smaller')
+                        error_msg.setFont(font_error)
+                        error_msg.exec_()
+            if not error_msg:
+                error_msg = QtGui.QMessageBox()
+                error_msg.setText('No impulses')
+                error_msg.setFont(font_error)
+                error_msg.exec_()
+'''
 
 
 def main():
@@ -381,7 +460,5 @@ def main():
     window.setWindowTitle("Laser YAG:Nd")
     window.show()
     sys.exit(app.exec_())
-
-
 if __name__ == '__main__':
     main()
