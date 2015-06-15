@@ -39,8 +39,8 @@ except AttributeError:
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig)
 
-version_file = open(os.path.join(os.path.curdir, _fromUtf8('VERSION')))
-version = version_file.read().strip()
+# version_file = open(os.path.join(os.path.curdir, _fromUtf8('VERSION')))
+# version = version_file.read().strip()
 
 
 class MainApp(QtGui.QMainWindow):
