@@ -19,7 +19,7 @@ from optimization.optim_T0 import optimizeT0
 import time
 # import multiprocessing
 # import os
-
+# global R
 
 optimize_events = {
     "Optimize_R2": optimizeR2,
@@ -44,18 +44,26 @@ def equation(t, x):
                         * x[2]/tau_r + (x[0]+Ng_total)*Cg_eps])
 
 r = ode(equation).set_integrator('dop853', atol=1e-12, rtol=1e-12)
-r.set_initial_value(x0, t0)
+r.set_initial_value(x0, time_start)
 
 
 def laserYAGNd(x_out, tau):
-    while r.successful() and r.t < t1:
+    # ii = 0
+    # global R
+    while r.successful() and r.t < time_end:
         r.integrate(r.t+dt)
         x_out = numpy.vstack([x_out, numpy.abs(r.y)])
         tau = numpy.vstack([tau, r.t])
+        # print(x_out[ii, 0])
+        # R11 = Pi * (1 - math.exp(-2 * sigma_p * x_out[ii, 0] * lg))  # um^-3 * us^-1
+        # R22 = A * lg * h * nu_p
+        # R = R11 / R22 * 1e-3
+        # ii += 1
     nd = x_out[:, 0]
     na = x_out[:, 1]
     q = x_out[:, 2]
-    p = h*nu_p/tau_r * math.log(1/R2) * q * 1e6
+    p = h*nu_l/tau_r * math.log(1/R2) * q * 1e6
+    tau[0] = 0
     return nd, na, q, p, tau
 
 
@@ -67,12 +75,15 @@ def main():
     # print("Ng total %f " % Ng_total)
     # p # rint("Na total %f" % Na_total)
 
-    # optimize = False
+    optimize = False
     # optimize = "Optimize_R2"
     # optimize = "Optimize_lg"
     # optimize = "Optimize_la"
-    optimize = "Optimize_T0"
-    print(optimize)
+    # optimize = "Optimize_T0"
+    print('Optimize event - %s' % optimize)
+
+    # print("R11 = %f" % R11, "R22 = %f" % R22, "R = %f" % R, "R_ = %f" % R_)
+    # print("Ng_total = %f" % Ng_total, "Na_total = %f" % Na_total)
 
     if optimize is False:
         _time = time.time()
@@ -91,13 +102,13 @@ def main():
 
         local_max = argrelmax(P, order=100)
         for jj in local_max[0]:
-            if P[jj] < 5:
+            if P[jj] < 2:
                 local_max = numpy.delete(local_max, numpy.where(local_max == jj))
         try:
             local_max = numpy.delete(local_max, 0)
             local_max = numpy.delete(local_max, len(local_max)-1)
         except IndexError:
-            print("No maximum over 5W")
+            print("No maximum over 2 W")
             pass
         # print("local max %s" % local_max)
 
@@ -134,19 +145,34 @@ def main():
             avg_imp_energy += imp_energy
             # print("Impulse energy %2.4f" % imp_energy)
         avg_imp_energy /= numpy.size(local_max) - 1
-        print("Impulse average energy %2.4f uJ" % avg_imp_energy)
+        print("Impulse average energy %2.4f nJ" % avg_imp_energy)
         # Find average impulse max power
         avg_P += numpy.sum(P[local_max])
         avg_P /= numpy.size(local_max)
-        print("Impulse average max power %2.4f W" % avg_P)
+        print("Impulse average power %2.4f W" % avg_P)
 
-        plt.figure(1)
-        plt.subplot(311)
-        plt.plot(tau, Nd)
-        plt.subplot(312)
-        plt.plot(tau, Na)
-        plt.subplot(313)
-        plt.plot(tau, P)
+        # print('tau0 = %f' % tau[0])
+        # print('tau_last = %f' % tau[len(tau)-1])
+
+        fig = plt.figure(1)
+        ax1 = fig.add_subplot(211)
+        ax2 = fig.add_subplot(212)
+
+        ax1.set_xlabel('Time, us')
+        ax1.set_ylabel('Concentration, Nd - blue, Cr - red ')
+
+        ax2.set_xlabel('Time, us')
+        ax2.set_ylabel('Power, W')
+
+        ax1.plot(tau, Nd * 1e12, 'b')
+        ax1.hold()
+        plt_ax1 = ax1.plot(tau, Na * 1e12, color='r')
+        ax1.hold()
+
+        ax2.plot(tau, P, color='b')
+        ax2.hold()
+
+        # plt.savefig('out.jpg', format='jpg', dpi=600)
         plt.show()
     else:
         interval = interval_events[optimize]

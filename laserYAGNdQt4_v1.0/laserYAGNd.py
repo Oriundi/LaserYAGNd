@@ -96,7 +96,7 @@ class MainApp(QtGui.QMainWindow):
         self.ui.value_Ng_total_perc.setProperty("value", cfgfile.get('Crystal properties', 'Ng_total_perc'))
         self.ui.value_T0.setProperty("text", float(cfgfile.get('Crystal properties', 'T0')))
 
-        self.ui.value_alpha.setProperty("value", float(cfgfile.get('Losses', 'alpha')) / 1e-3)
+        self.ui.value_alpha.setProperty("value", float(cfgfile.get('Losses', 'alpha')))
         self.ui.value_R1.setProperty("value", cfgfile.get('Losses', 'R1'))
         self.ui.value_R2.setProperty("value", cfgfile.get('Losses', 'R2'))
 
@@ -130,7 +130,7 @@ class MainApp(QtGui.QMainWindow):
         self.ui.value_Ng_total_perc.setProperty("value", cfgfile.get('Crystal properties', 'Ng_total_perc'))
         self.ui.value_T0.setProperty("text", float(cfgfile.get('Crystal properties', 'Na_total')))
 
-        self.ui.value_alpha.setProperty("value", float(cfgfile.get('Losses', 'alpha')) / 1e-3)
+        self.ui.value_alpha.setProperty("value", float(cfgfile.get('Losses', 'alpha')))
         self.ui.value_R1.setProperty("value", cfgfile.get('Losses', 'R1'))
         self.ui.value_R2.setProperty("value", cfgfile.get('Losses', 'R2'))
 
@@ -169,7 +169,7 @@ class MainApp(QtGui.QMainWindow):
         cfgfile.set('Crystal properties', 'Na_total', str(float(self.ui.value_T0.text())))
 
         cfgfile.add_section('Losses')
-        cfgfile.set('Losses', 'alpha', str(float(self.ui.value_alpha.text()) * 1e-3))
+        cfgfile.set('Losses', 'alpha', str(float(self.ui.value_alpha.text())))
         cfgfile.set('Losses', 'R1', self.ui.value_R1.text())
         cfgfile.set('Losses', 'R2', self.ui.value_R2.text())
 
@@ -196,9 +196,9 @@ class MainApp(QtGui.QMainWindow):
         # eq[1] = Ca * x[1] * x[2] + (Na_total - x[1])/tau_a
         # eq[2] = (x[0]*g - x[1]*a1 - (Na_total-x[1])*a2 - 2*gamma) * x[2]/tau_r + (x[0]+Ng_total) * Cg_eps
         eq = numpy.array([R - Cg * x[0] * x[2] - x[0]/tau_g,
-                           Ca * x[1] * x[2] + (T0 - x[1])/tau_a,
-                           (x[0]*g - x[1]*a1 - (T0-x[1])*a2 - 2*gamma)
-                          * x[2]/tau_r + (x[0]+Ng_total_perc)*Cg_eps])
+                           Ca * x[1] * x[2] + (Na_total - x[1])/tau_a,
+                           (x[0]*g - x[1]*a1 - (Na_total-x[1])*a2 - 2*gamma)
+                          * x[2]/tau_r + (x[0]+Ng_total)*Cg_eps])
         return eq
 
     def solve_equation(self, x_out, tau):
@@ -239,13 +239,13 @@ class MainApp(QtGui.QMainWindow):
         return nd, na, q, tau
 
     def update_input_data(self):
-        c0 = 3e4   #c0 = 3 * 1e8  # um^2/us, speed of light
+        c0 = 3e4   #c0 = 3 * 1e8  # ucm/us, speed of light
         h = 6.626069 * 1e-34 * 1e6  # J*us, Plank constant
         eps = 10**-13   # describes relative power of spontaneous emission, Resonatorless
 
-        lg = self.ui.value_lg.valueFromText(self.ui.value_lg.text()) * 1e-6
-        la = self.ui.value_la.valueFromText(self.ui.value_la.text()) * 1e-6
-        rl = self.ui.value_rl.valueFromText(self.ui.value_rl.text()) * 1e-6
+        lg = self.ui.value_lg.valueFromText(self.ui.value_lg.text())
+        la = self.ui.value_la.valueFromText(self.ui.value_la.text())
+        rl = self.ui.value_rl.valueFromText(self.ui.value_rl.text())
         n = self.ui.value_n.valueFromText(self.ui.value_n.text())
 
         sigma_g = self.ui.value_sigma_g.valueFromText(self.ui.value_sigma_g.text()) * 1e-19  # * 1e8
@@ -255,13 +255,13 @@ class MainApp(QtGui.QMainWindow):
         Ng_total_perc = self.ui.value_Ng_total_perc.valueFromText(self.ui.value_Ng_total_perc.text())
         T0 = self.ui.value_T0.valueFromText(self.ui.value_T0.text())
 
-        alpha = self.ui.value_alpha.valueFromText(self.ui.value_alpha.text()) * 1e-3   # 1e-4
+        alpha = self.ui.value_alpha.valueFromText(self.ui.value_alpha.text())   # 1e-4
         R1 = self.ui.value_R1.valueFromText(self.ui.value_R1.text())
         R2 = self.ui.value_R2.valueFromText(self.ui.value_R2.text())
 
         Pi = self.ui.value_Pi.valueFromText(self.ui.value_Pi.text())
-        wavelength = self.ui.value_wavelength.valueFromText(self.ui.value_wavelength.text()) * 1e-6
-        rp = self.ui.value_rp.valueFromText(self.ui.value_rp.text()) * 1e-6
+        wavelength = self.ui.value_wavelength.valueFromText(self.ui.value_wavelength.text())
+        rp = self.ui.value_rp.valueFromText(self.ui.value_rp.text())
 
         gamma_i = alpha * lg  # absorption losses in active media
         gamma_1 = -math.log(R1)  # losses on input mirror
@@ -269,21 +269,22 @@ class MainApp(QtGui.QMainWindow):
         gamma = gamma_i + 0.5 * (gamma_1 + gamma_2)  # losses
         lr = n * (lg + la)  # um, resonator optical length, lr = n(l_g + l_a)
         tau_r = 2 * lr / c0  # us, time of photon full pass in resonator (2l'/c0), t_r = 2*l_opt/c
-        nu_p = c0 / wavelength  # 1/us, radiation excitation frequency
+        nu_p = c0 / (n * wavelength)  # 1/us, radiation excitation frequency
 
         V = math.pi * rp**2 * lg  	# um^3, pumping beam volume in generating media
-        Vg = 0.5 * math.pi * rl**2 * lg
-        Veff = lr / la * Vg          # um^3, effective mode volume
-        #print(V, Vg)
+        Vg = 1 / 4 * math.pi * rl**2 * lg
+        Veff = lr / lg * Vg          # um^3, effective mode volume
+        # print(lr, lg, Vg)
 
         eta = rl/rp
-        R = eta * Pi / (V * h * nu_p * 1e6)
+        R = eta * Pi / (V * h * nu_p) * 1e-6
+        # print(R)
 
         Ng_total = 0
         Na_total = 0
-
+        # print('T0 = %f, sigma_a1 = %f, la = %f' % (T0, sigma_a1 * 1e18, la))
         Ng_total = (3 * 4.55) / ((3 * 88.9 + 5 * 27.0 + 12 * 16.0) * 1.6726 * 1e-24) * Ng_total_perc / 100
-        Na_total = math.log(T0) / (-1 * sigma_a1 * la)
+        Na_total = numpy.log(T0) / (-1 * sigma_a1 * la)
         # print("Ng_total out = %f" % Ng_total)
         # print("Na_total out = %f" % Na_total)
         # Ng_total = 1.66e18
@@ -296,7 +297,7 @@ class MainApp(QtGui.QMainWindow):
         a1 = 2 * sigma_a1 * la  # um^3
         a2 = 2 * sigma_a2 * la  # um^3
         Cg_eps = eps * c0 * sigma_g * lg / lr  # um^3/us.
-        #print(Cg, Ca, g, a1, a2, Cg_eps)
+        # print(Cg, Ca, g, a1, a2, Cg_eps)
 
         return gamma, tau_r, R, Ng_total, Na_total, Cg, Ca, g, a1, a2, Cg_eps, nu_p
 
@@ -341,7 +342,7 @@ class MainApp(QtGui.QMainWindow):
         sigma_a2 = self.ui.value_sigma_a2.valueFromText(self.ui.value_sigma_a2.text()) * 1e-19   # * 1e8
         lg = self.ui.value_lg.valueFromText(self.ui.value_lg.text())
         la = self.ui.value_la.valueFromText(self.ui.value_la.text())
-        alpha = self.ui.value_alpha.valueFromText(self.ui.value_alpha.text()) * 1e-3   # 1e-4
+        alpha = self.ui.value_alpha.valueFromText(self.ui.value_alpha.text()) * 1e-3   # * 1e-4
         R1 = self.ui.value_R1.valueFromText(self.ui.value_R1.text())
         R2 = self.ui.value_R2.valueFromText(self.ui.value_R2.text())
         n = self.ui.value_n.valueFromText(self.ui.value_n.text())
@@ -353,14 +354,35 @@ class MainApp(QtGui.QMainWindow):
         #Ngi = 1.66e7
         #Ngmax = R * tau_g
         #Na_total = 1e6
+        
+        # print("tau_m = %f" % (tau_m))
+        # print("tau_a = %f" % (tau_a))
+        # print("tau_g = %f" % (tau_g))
+        # print("tau_a = %f" % (tau_a))
 
-        print("Ng_total = %f" % Ng_total)
-        print("Na_total = %f" % Na_total)
+        # print("Ng_total = %f" % (Ng_total * 1e-17))
+        # print("Na_total = %f" % (Na_total * 1e-17))
+        # print("dt = %f" % (dt))
 
+        # print("x_out_initial = %f" % (x_out_initial))
+        # print("tau_initial = %f" % (tau_initial))
+
+        # print("sigma_a2 = %f" % (sigma_a2))
+        # print("lg = %f" % (lg))
+        # print("la = %f" % (la))
+        # print("rl = %f" % (rl))
+        # print("alpha = %f" % (alpha))
+        # print("R2 = %f" % (R2))
+        # print("n = %f" % (n))
+        # print("Ng_total_perc = %f" % (Ng_total_perc))
+        # print("T0 = %f" % (T0))
+        # print("R1 = %f" % (R1))
+        
+        
         x_out_initial = numpy.array([Ng_total, Na_total, 0])
         tau_initial = 0
         Ng, Na, q, tau = self.solve_equation(x_out_initial, tau_initial)
-        P = numpy.array(h * nu_p / tau_r * math.log(1/R2) * q * 1e6)
+        P = numpy.array(h * (3e4 / 0.0001064) / tau_r * math.log(1/R2) * q * 1e6)
 
         penNd = pqg.mkPen(width=1, color='r')
         penNa = pqg.mkPen(width=1, color='g')
