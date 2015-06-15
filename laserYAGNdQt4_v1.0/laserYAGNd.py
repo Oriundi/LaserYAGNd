@@ -21,7 +21,7 @@ from PyQt4 import QtCore, QtGui
 import pyqtgraph as pqg
 #import sympy
 #from multiprocessing import Pool
-import sqlalchemy
+# import sqlalchemy
 
 
 try:
@@ -70,9 +70,6 @@ class MainApp(QtGui.QMainWindow):
         self.ui.plot_NdNa.setLabel('bottom',  text=_fromUtf8('Time, μs'), font='k')
         self.ui.plot_P.setLabel('left', text=_fromUtf8('Power, W'), font='k')
         self.ui.plot_P.setLabel('bottom', text=_fromUtf8('Time, μs'), font='k')
-
-        # Working with PostgreSQL
-        # engine = sqlalchemy.create_engine('postgresql://oriundi:q3w7e9r@localhost/test')
 
     def open_default_config(self):
         cfgfile = configparser.ConfigParser()
